@@ -1,3 +1,4 @@
+import { match } from "assert";
 import { TStudent } from "./student.interface";
 import { Student } from "./student.model";
 
@@ -27,7 +28,9 @@ const getStudentByIdFromDB = async (id: string) => {
 };
 
 const deleteStudentByIdFromDB = async (id: string) => {
-  const result = await Student.updateOne({ id }, { isDeleted: true });
+  // const result = await Student.updateOne({ id }, { isDeleted: true });
+
+  const result = await Student.aggregate([{ $match: { id: id } }]);
   return result;
 };
 

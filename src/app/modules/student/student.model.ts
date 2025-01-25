@@ -31,47 +31,54 @@ const localGurdianSchema = new Schema<TLocalGuardian>({
   address: { type: String, required: true },
 });
 
-const studentSchema = new Schema<TStudent, StudentModel>({
-  id: { type: String, required: [true, "Id is required"], unique: true },
-  password: {
-    type: String,
-    required: [true, "Password is required"],
-    maxlength: [12, "Password can not be more then 12 Characters"],
+const studentSchema = new Schema<TStudent, StudentModel>(
+  {
+    id: { type: String, required: [true, "Id is required"], unique: true },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      maxlength: [12, "Password can not be more then 12 Characters"],
+    },
+    name: {
+      type: userNameSchema,
+      required: true,
+    },
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+    },
+    dateOfBirth: { type: String },
+    email: { type: String, required: true },
+    contactNo: { type: String, required: true },
+    emergencyContactNo: { type: String, required: true },
+    bloodGroup: {
+      type: String,
+      enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+    },
+    presentAddress: { type: String, required: true },
+    permanentAddress: { type: String, required: true },
+    guardian: guardianSchema,
+    localGuardian: {
+      type: localGurdianSchema,
+      required: true,
+    },
+    profileImage: { type: String },
+    isActive: {
+      type: String,
+      enum: ["active", "blocked"],
+      default: "active",
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
-  name: {
-    type: userNameSchema,
-    required: true,
-  },
-  gender: {
-    type: String,
-    enum: ["male", "female"],
-  },
-  dateOfBirth: { type: String },
-  email: { type: String, required: true },
-  contactNo: { type: String, required: true },
-  emergencyContactNo: { type: String, required: true },
-  bloodGroup: {
-    type: String,
-    enum: ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
-  },
-  presentAddress: { type: String, required: true },
-  permanentAddress: { type: String, required: true },
-  guardian: guardianSchema,
-  localGuardian: {
-    type: localGurdianSchema,
-    required: true,
-  },
-  profileImage: { type: String },
-  isActive: {
-    type: String,
-    enum: ["active", "blocked"],
-    default: "active",
-  },
-  isDeleted: {
-    type: Boolean,
-    default: false,
-  },
-});
+  {
+    toJSON: {
+      virtuals: true,
+    },
+  }
+);
 
 // Pre Middleware
 studentSchema.pre("save", async function () {
@@ -93,7 +100,26 @@ studentSchema.post("save", function (doc, next) {
 // Querry Middleware
 studentSchema.pre("find", function (next) {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
-  const student = this;
+  this.find({ isDeleted: { $ne: true } });
+  next();
+});
+
+// Querry Middleware FindOne
+studentSchema.pre("findOne", function (next) {
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  this.find({ isDeleted: { $ne: true } });
+  next();
+});
+
+// Querry Middleware Agregrae
+studentSchema.pre("aggregate", function (next) {
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
+  this.pipeline().unshift({ $match: { isDeleted: { $ne: true } } });
+  next();
+});
+
+studentSchema.virtual("fullName").get(function () {
+  return `${this.name.firstName} ${this.name.middleName} ${this.name.lastName}`;
 });
 
 // Creating Custom Statics Methods;
